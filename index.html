@@ -1,7 +1,10 @@
 <div>Posture Monitoring</div>
 <button type="button" onclick="init()">Start</button>
+<button type="button" onclick="countDown()">Count Down</button>
+<button type="button" onclick="exportCSV()">export CSV</button>
 <div><canvas id="canvas"></canvas></div>
 <div id="status", style.fontSize=50></div>
+<div id="score", style.fontSize=50></div>
 <div id="label-container"></div>
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.3.1/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/pose@0.8/dist/teachablemachine-pose.min.js"></script>
@@ -17,6 +20,11 @@
         const modelURL = URL + "model.json";
         const metadataURL = URL + "metadata.json";
 
+        // intialize posture tracking array
+        posture_ct = Array();
+        score = 0;
+        second_factor = 10
+        max_countdown_time = 30 * 60 * second_factor
         // load the model and metadata
         // Refer to tmImage.loadFromFiles() in the API to support files from a file picker
         // Note: the pose library adds a tmPose object to your window (window.tmPose)
@@ -42,11 +50,19 @@
         }
         status_ = document.getElementById("status")
         status_.style.fontSize=500
+
+        score_  = document.getElementById("score")
+        score_.style.fontSize=100
     }
+
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+}
 
     async function loop(timestamp) {
         webcam.update(); // update the webcam frame
         await predict();
+        await sleep(1000 / second_factor);
         window.requestAnimationFrame(loop);
     }
 
@@ -67,16 +83,53 @@
                     status_.innerHTML = "BAD"
                     status_.style.color = "white"
                     status_.style.backgroundColor = "red"
+                    // bad posture gets 0 point
+                    if (posture_ct.length < max_countdown_time) {
+                        posture_ct[posture_ct.length] = 0
+                    }
+
                 } else {
                     status_.innerHTML = "OK"
                     status_.style.color = "green"
                     status_.style.backgroundColor = "white"
+                    // good posture gets one point
+                    if (posture_ct.length < max_countdown_time) {
+                        posture_ct[posture_ct.length] = 1 / second_factor
+                        score = score + 1 / second_factor
+                    }
                 }
+                score_.innerHTML = Math.floor(score) + "/" + Math.floor(posture_ct.length/second_factor) + " seconds ok posture"
             }
         }
         
         // finally draw the poses
         drawPose(pose);
+    }
+
+    function countDown() {
+        console.log("start counting down")
+        posture_ct = Array();
+        score = 0;
+    }
+
+    function get_output_filename(subfix) {
+        var output_filename = Date.now() + subfix;
+        return output_filename 
+    }
+
+    function exportCSV() {
+        var csv_data = ""
+        for (let i = 0; i < posture_ct.length; i += 1) {
+        // Percentage in the x direction, times 255
+            csv_data += posture_ct[i] + "," 
+            csv_data +=  "\n"
+        }
+
+        var hiddenElement = document.createElement('a');
+        hiddenElement.href = 'data:text/csv;charset=utf-8,' + encodeURI(csv_data);
+        hiddenElement.target = '_blank';
+        hiddenElement.download = get_output_filename(".csv");
+        hiddenElement.click();
     }
 
     function drawPose(pose) {
