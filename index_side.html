@@ -10,7 +10,7 @@
     // https://github.com/googlecreativelab/teachablemachine-community/tree/master/libraries/pose
 
     // the link to your model provided by Teachable Machine export panel
-    const URL = "https://teachablemachine.withgoogle.com/models/_WRRQZgSt/";
+    const URL = "https://teachablemachine.withgoogle.com/models/cIviNAdrA/";
     let model, webcam, ctx, labelContainer, maxPredictions;
 
     async function init() {
@@ -62,7 +62,7 @@
                 prediction[i].className + ": " + prediction[i].probability.toFixed(2);
             labelContainer.childNodes[i].innerHTML = classPrediction;
             //status_ = document.getElementById("status")
-            if(prediction[i].className == "Class 2") {
+            if(prediction[i].className == "bad posture") {
                 if (prediction[i].probability.toFixed(2) > 0.5) {
                     status_.innerHTML = "BAD"
                     status_.style.color = "white"
