@@ -21,10 +21,13 @@
         const metadataURL = URL + "metadata.json";
 
         // intialize posture tracking array
-        posture_ct = Array();
+        start = false;
         score = 0;
-        second_factor = 10
-        max_countdown_time = 30 * 60 * second_factor
+        start_time = Date.now();
+        total = 0;
+        posture_ct = Array();
+        //max_countdown_time = 30 * 60;
+        max_countdown_time = 60;
         // load the model and metadata
         // Refer to tmImage.loadFromFiles() in the API to support files from a file picker
         // Note: the pose library adds a tmPose object to your window (window.tmPose)
@@ -57,13 +60,22 @@
 
     function sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
-}
+    }
 
     async function loop(timestamp) {
         webcam.update(); // update the webcam frame
         await predict();
-        await sleep(1000 / second_factor);
         window.requestAnimationFrame(loop);
+        if (start == true) {
+            var prev_length = posture_ct.length;
+            posture_ct[Math.floor((Date.now() - start_time)/1000)] = score
+            var curr_length = posture_ct.length;
+            if (curr_length > prev_length){
+                console.log(curr_length)
+                // console.log(score + "|" + total + "|" + posture_ct.length)
+                // console.log(total/posture_ct.length)
+            }
+        }
     }
 
     async function predict() {
@@ -84,8 +96,10 @@
                     status_.style.color = "white"
                     status_.style.backgroundColor = "red"
                     // bad posture gets 0 point
-                    if (posture_ct.length < max_countdown_time) {
-                        posture_ct[posture_ct.length] = 0
+                    if ((posture_ct.length <= max_countdown_time) && (start == true)) {
+                        // posture_ct[posture_ct.length] = 1 
+                    } else {
+                        start = false
                     }
 
                 } else {
@@ -93,23 +107,37 @@
                     status_.style.color = "green"
                     status_.style.backgroundColor = "white"
                     // good posture gets one point
-                    if (posture_ct.length < max_countdown_time) {
-                        posture_ct[posture_ct.length] = 1 / second_factor
-                        score = score + 1 / second_factor
+                    if ((posture_ct.length <= max_countdown_time) && (start == true)) {
+                        // posture_ct[posture_ct.length] = 1 
+                        score = score + 1
+                    } else {
+                        start = false
                     }
                 }
-                score_.innerHTML = Math.floor(score) + "/" + Math.floor(posture_ct.length/second_factor) + " seconds ok posture"
             }
         }
         
         // finally draw the poses
         drawPose(pose);
+        // update score
+        if (start) {
+            total = total + 1;
+            //score_.innerHTML = Math.round(score/30) + "/" + Math.round(total/30)
+            score_.innerHTML = Math.floor(posture_ct.length * score/total) + "/" + posture_ct.length
+        }
     }
 
     function countDown() {
         console.log("start counting down")
+        start = true;
         posture_ct = Array();
         score = 0;
+        total = 0;
+        start_time = Date.now();
+    }
+
+    function pause() {
+        console.log("hello")
     }
 
     function get_output_filename(subfix) {
