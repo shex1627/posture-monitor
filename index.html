@@ -27,7 +27,7 @@
         total = 0;
         posture_ct = Array();
         //max_countdown_time = 30 * 60;
-        max_countdown_time = 60;
+        max_countdown_time = 1800;
         // load the model and metadata
         // Refer to tmImage.loadFromFiles() in the API to support files from a file picker
         // Note: the pose library adds a tmPose object to your window (window.tmPose)
@@ -68,7 +68,7 @@
         window.requestAnimationFrame(loop);
         if (start == true) {
             var prev_length = posture_ct.length;
-            posture_ct[Math.floor((Date.now() - start_time)/1000)] = score
+            posture_ct[Math.floor((Date.now() - start_time)/1000)] = score + "," + total
             var curr_length = posture_ct.length;
             if (curr_length > prev_length){
                 console.log(curr_length)
