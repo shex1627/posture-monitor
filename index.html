@@ -88,14 +88,13 @@
         const { pose, posenetOutput } = await model.estimatePose(webcam.canvas);
         // Prediction 2: run input through teachable machine classification model
         const prediction = await model.predict(posenetOutput);
-
         for (let i = 0; i < maxPredictions; i++) {
             const classPrediction =
                 prediction[i].className + ": " + prediction[i].probability.toFixed(2);
             labelContainer.childNodes[i].innerHTML = classPrediction;
             //status_ = document.getElementById("status")
 	    if(prediction[i].className == "bad posture") {
-		if (pause == false) {
+		if (start == true && pause == false) {
 		    posture_count++;
 		}
 		if (prediction[i].probability.toFixed(2) > 0.5) {
@@ -170,18 +169,22 @@
     }
 
     function exportCSV() {
-        var csv_data = ""
-        for (let i = 0; i < posture_ct.length; i += 1) {
-        // Percentage in the x direction, times 255
-            csv_data += posture_ct[i] + "," 
-            csv_data +=  "\n"
-        }
+	if (posture_ct.length <= 0) {
+	    alert("Nothing to export");    
+	} else {
+	    var csv_data = ""
+            for (let i = 0; i < posture_ct.length; i += 1) {
+            // Percentage in the x direction, times 255
+                csv_data += posture_ct[i] + "," 
+                csv_data +=  "\n"
+            }
 
-        var hiddenElement = document.createElement('a');
-        hiddenElement.href = 'data:text/csv;charset=utf-8,' + encodeURI(csv_data);
-        hiddenElement.target = '_blank';
-        hiddenElement.download = get_output_filename(".csv");
-        hiddenElement.click();
+            var hiddenElement = document.createElement('a');
+            hiddenElement.href = 'data:text/csv;charset=utf-8,' + encodeURI(csv_data);
+            hiddenElement.target = '_blank';
+            hiddenElement.download = get_output_filename(".csv");
+            hiddenElement.click();
+	}
     }
 
     function drawPose(pose) {
