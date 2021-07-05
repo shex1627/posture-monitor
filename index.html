@@ -2,6 +2,8 @@
 <button type="button" onclick="init()">Start</button>
 <button type="button" onclick="countDown()">Count Down</button>
 <button type="button" onclick="exportCSV()">export CSV</button>
+<button type="button" onclick="pauseCount()">pause</button>
+<button type="button" onclick="unpause()">unpause</button>
 <div><canvas id="canvas"></canvas></div>
 <div id="status", style.fontSize=50></div>
 <div id="score", style.fontSize=50></div>
@@ -14,7 +16,7 @@
 
     // the link to your model provided by Teachable Machine export panel
     const URL = "https://teachablemachine.withgoogle.com/models/SiZ9x5Vrf/";
-    let model, webcam, ctx, labelContainer, maxPredictions;
+    let model, webcam, ctx, labelContainer, maxPredictions, start, pause, score, start_time, total, posture_ct, max_countdown_time, posture_count;
 
     async function init() {
         const modelURL = URL + "model.json";
@@ -22,10 +24,12 @@
 
         // intialize posture tracking array
         start = false;
+	pause = false;
         score = 0;
         start_time = Date.now();
         total = 0;
         posture_ct = Array();
+	posture_count = 0;
         //max_countdown_time = 30 * 60;
         max_countdown_time = 1800;
         // load the model and metadata
@@ -66,7 +70,7 @@
         webcam.update(); // update the webcam frame
         await predict();
         window.requestAnimationFrame(loop);
-        if (start == true) {
+        if (start == true && pause == false) {
             var prev_length = posture_ct.length;
             posture_ct[Math.floor((Date.now() - start_time)/1000)] = score + "," + total
             var curr_length = posture_ct.length;
@@ -90,16 +94,21 @@
                 prediction[i].className + ": " + prediction[i].probability.toFixed(2);
             labelContainer.childNodes[i].innerHTML = classPrediction;
             //status_ = document.getElementById("status")
-            if(prediction[i].className == "Class 2") {
-                if (prediction[i].probability.toFixed(2) > 0.5) {
+	    if(prediction[i].className == "bad posture") {
+		if (pause == false) {
+		    posture_count++;
+		}
+		if (prediction[i].probability.toFixed(2) > 0.5) {
                     status_.innerHTML = "BAD"
                     status_.style.color = "white"
                     status_.style.backgroundColor = "red"
                     // bad posture gets 0 point
-                    if ((posture_ct.length <= max_countdown_time) && (start == true)) {
+                    if ((posture_count <= max_countdown_time) && (start == true)) {
                         // posture_ct[posture_ct.length] = 1 
                     } else {
-                        start = false
+			if (pause == false) {
+                            start = false;
+			}
                     }
 
                 } else {
@@ -107,11 +116,15 @@
                     status_.style.color = "green"
                     status_.style.backgroundColor = "white"
                     // good posture gets one point
-                    if ((posture_ct.length <= max_countdown_time) && (start == true)) {
+                    if ((posture_count <= max_countdown_time) && (start == true)) {
                         // posture_ct[posture_ct.length] = 1 
-                        score = score + 1
+			if (pause == false) {
+                            score = score + 1;
+			}
                     } else {
-                        start = false
+			if (pause == false) {
+                            start = false;
+			}
                     }
                 }
             }
@@ -120,10 +133,11 @@
         // finally draw the poses
         drawPose(pose);
         // update score
-        if (start) {
+        if (start == true && pause == false) {
             total = total + 1;
+	    //console.log("total: " + total, " score: " +score + " p_len " + posture_ct.length);
             //score_.innerHTML = Math.round(score/30) + "/" + Math.round(total/30)
-            score_.innerHTML = Math.floor(posture_ct.length * score/total) + "/" + posture_ct.length
+            score_.innerHTML = Math.floor(posture_count * score/total) + "/" + posture_count;
         }
     }
 
@@ -136,8 +150,18 @@
         start_time = Date.now();
     }
 
-    function pause() {
-        console.log("hello")
+    function pauseCount() {
+	if(pause == false) {
+	    pause = true;
+	}
+	
+        console.log("pause")
+    }
+	
+    function unpause() {
+	if (pause == true) {
+	    pause = false;
+	}
     }
 
     function get_output_filename(subfix) {
