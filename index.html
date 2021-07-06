@@ -90,7 +90,7 @@
 		drawPose(pose);
 		ind = Math.floor((Date.now() - start_time)/1000);
 		if (prev_ind < ind) {
-			console.log(prev_ind + " " + ind);
+			//console.log(prev_ind + " " + ind);
 			prev_ind = ind
 			for (let i = 0; i < maxPredictions; i++) {
 				const classPrediction =
@@ -131,10 +131,6 @@
 					}
 				}
 			}
-		 
-			
-			// finally draw the poses
-			// drawPose(pose);
 			// update score
 			if (start == true && pause == false) {
 				total++;
@@ -152,7 +148,7 @@
         score = 0;
         total = 0;
         start_time = Date.now();
-	prev_ind = 0;
+		prev_ind = 0;
     }
 
     function pauseCount() {
@@ -164,9 +160,9 @@
     }
 	
     function unpause() {
-	if (pause == true) {
-	    pause = false;
-	}
+		if (pause == true) {
+			pause = false;
+		}
     }
 
     function get_output_filename(subfix) {
