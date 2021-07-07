@@ -1,9 +1,9 @@
 <div>Posture Monitoring</div>
 <button type="button" onclick="init()">Start</button>
-<button type="button" onclick="countDown()">Count Down</button>
-<button type="button" onclick="exportCSV()">export CSV</button>
+<button id="count_down_button" type="button" onclick="countDown()">Count Down</button>
 <button type="button" onclick="pauseCount()">pause</button>
 <button type="button" onclick="unpause()">unpause</button>
+<button type="button" onclick="exportCSV()">export CSV</button>
 <div><canvas id="canvas"></canvas></div>
 <div id="status", style.fontSize=50></div>
 <div id="score", style.fontSize=50></div>
@@ -149,6 +149,7 @@
         total = 0;
         start_time = Date.now();
 		prev_ind = 0;
+		document.getElementById("count_down_button").disabled = true;
     }
 
     function pauseCount() {
