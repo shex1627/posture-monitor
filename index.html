@@ -35,6 +35,7 @@
 		ind = 0;
         //max_countdown_time = 30 * 60;
         max_countdown_time = 1800;
+		max_countdown_time = 10;
         // load the model and metadata
         // Refer to tmImage.loadFromFiles() in the API to support files from a file picker
         // Note: the pose library adds a tmPose object to your window (window.tmPose)
@@ -75,7 +76,7 @@
         window.requestAnimationFrame(loop);
         if (start == true && pause == false) {
             //var prev_length = posture_ct.length;
-            //console.log("sec : " + Math.floor((Date.now() - start_time)/1000));
+            //console.log("sec : " + Math.floor((Date.now() - start_time)/1000) + " " + score + " " + posture_count);
 			posture_ct[Math.floor((Date.now() - start_time)/1000)] = score + "," + total
         }
     }
@@ -89,6 +90,8 @@
 		// draw the poses
 		drawPose(pose);
 		ind = Math.floor((Date.now() - start_time)/1000);
+		
+		//console.log("score : " + score + "ind : " + ind + " prev_ind " + prev_ind + " total : " + total + " start " + start + " pause " + pause );
 		if (prev_ind < ind) {
 			//console.log(prev_ind + " " + ind);
 			prev_ind = ind
@@ -151,7 +154,10 @@
         total = 0;
         start_time = Date.now();
 		prev_ind = 0;
+		pause = false;
+		posture_count = 0;
 		document.getElementById("count_down_button").disabled = true;
+		console.log("score " + score)
     }
 
     function pauseCount() {
