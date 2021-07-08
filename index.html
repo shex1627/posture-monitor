@@ -1,6 +1,8 @@
 <div>Posture Monitoring</div>
 <button type="button" onclick="init()">Start</button>
-<button type="button" onclick="countDown()">Count Down</button>
+<button id="count_down_button" type="button" onclick="countDown()">Count Down</button>
+<button type="button" onclick="pauseCount()">pause</button>
+<button type="button" onclick="unpause()">unpause</button>
 <button type="button" onclick="exportCSV()">export CSV</button>
 <div><canvas id="canvas"></canvas></div>
 <div id="status", style.fontSize=50></div>
@@ -14,7 +16,8 @@
 
     // the link to your model provided by Teachable Machine export panel
     const URL = "https://teachablemachine.withgoogle.com/models/SiZ9x5Vrf/";
-    let model, webcam, ctx, labelContainer, maxPredictions;
+    let model, webcam, ctx, labelContainer, maxPredictions, start, pause, score, start_time, total, posture_ct, max_countdown_time, posture_count;
+    let prev_ind, ind;
 
     async function init() {
         const modelURL = URL + "model.json";
@@ -22,12 +25,17 @@
 
         // intialize posture tracking array
         start = false;
+		pause = false;
         score = 0;
         start_time = Date.now();
         total = 0;
         posture_ct = Array();
+		posture_count = 0;
+		prev_ind = 0;
+		ind = 0;
         //max_countdown_time = 30 * 60;
         max_countdown_time = 1800;
+		//max_countdown_time = 10;
         // load the model and metadata
         // Refer to tmImage.loadFromFiles() in the API to support files from a file picker
         // Note: the pose library adds a tmPose object to your window (window.tmPose)
@@ -66,15 +74,10 @@
         webcam.update(); // update the webcam frame
         await predict();
         window.requestAnimationFrame(loop);
-        if (start == true) {
-            var prev_length = posture_ct.length;
-            posture_ct[Math.floor((Date.now() - start_time)/1000)] = score + "," + total
-            var curr_length = posture_ct.length;
-            if (curr_length > prev_length){
-                console.log(curr_length)
-                // console.log(score + "|" + total + "|" + posture_ct.length)
-                // console.log(total/posture_ct.length)
-            }
+        if (start == true && pause == false) {
+            //var prev_length = posture_ct.length;
+            //console.log("sec : " + Math.floor((Date.now() - start_time)/1000) + " " + score + " " + posture_count);
+			posture_ct[Math.floor((Date.now() - start_time)/1000)] = score + "," + total
         }
     }
 
@@ -84,47 +87,63 @@
         const { pose, posenetOutput } = await model.estimatePose(webcam.canvas);
         // Prediction 2: run input through teachable machine classification model
         const prediction = await model.predict(posenetOutput);
-
-        for (let i = 0; i < maxPredictions; i++) {
-            const classPrediction =
-                prediction[i].className + ": " + prediction[i].probability.toFixed(2);
-            labelContainer.childNodes[i].innerHTML = classPrediction;
-            //status_ = document.getElementById("status")
-            if(prediction[i].className == "Class 2") {
-                if (prediction[i].probability.toFixed(2) > 0.5) {
-                    status_.innerHTML = "BAD"
-                    status_.style.color = "white"
-                    status_.style.backgroundColor = "red"
-                    // bad posture gets 0 point
-                    if ((posture_ct.length <= max_countdown_time) && (start == true)) {
-                        // posture_ct[posture_ct.length] = 1 
-                    } else {
-                        start = false
-                    }
-
-                } else {
-                    status_.innerHTML = "OK"
-                    status_.style.color = "green"
-                    status_.style.backgroundColor = "white"
-                    // good posture gets one point
-                    if ((posture_ct.length <= max_countdown_time) && (start == true)) {
-                        // posture_ct[posture_ct.length] = 1 
-                        score = score + 1
-                    } else {
-                        start = false
-                    }
-                }
-            }
-        }
-        
-        // finally draw the poses
-        drawPose(pose);
-        // update score
-        if (start) {
-            total = total + 1;
-            //score_.innerHTML = Math.round(score/30) + "/" + Math.round(total/30)
-            score_.innerHTML = Math.floor(posture_ct.length * score/total) + "/" + posture_ct.length
-        }
+		// draw the poses
+		drawPose(pose);
+		ind = Math.floor((Date.now() - start_time)/1000);
+		
+		//console.log("score : " + score + "ind : " + ind + " prev_ind " + prev_ind + " total : " + total + " start " + start + " pause " + pause );
+		if (prev_ind < ind) {
+			//console.log(prev_ind + " " + ind);
+			prev_ind = ind
+			for (let i = 0; i < maxPredictions; i++) {
+				const classPrediction =
+					prediction[i].className + ": " + prediction[i].probability.toFixed(2);
+				labelContainer.childNodes[i].innerHTML = classPrediction;
+				//status_ = document.getElementById("status")
+				if(prediction[i].className == "bad posture") {
+					if (start == true && pause == false) {
+						posture_count++;
+					}
+					if (prediction[i].probability.toFixed(2) > 0.5) {
+						status_.innerHTML = "BAD"
+						status_.style.color = "white"
+						status_.style.backgroundColor = "red"
+						// bad posture gets 0 point
+						if ((posture_count <= max_countdown_time) && (start == true)) {
+							// posture_ct[posture_ct.length] = 1 
+						} else {
+							if (pause == false) {
+								start = false;
+								document.getElementById("count_down_button").disabled = false;
+							}
+						}
+					} else {
+						status_.innerHTML = "OK"
+						status_.style.color = "green"
+						status_.style.backgroundColor = "white"
+						// good posture gets one point
+						if ((posture_count <= max_countdown_time) && (start == true)) {
+							// posture_ct[posture_ct.length] = 1 
+							if (pause == false) {
+								score++;
+							}
+						} else {
+							if (pause == false) {
+								start = false;
+								document.getElementById("count_down_button").disabled = false;
+							}
+						}
+					}
+				}
+			}
+			// update score
+			if (start == true && pause == false) {
+				total++;
+				//console.log("total: " + total, " score: " +score + " p_len " + posture_ct.length);
+				//score_.innerHTML = Math.round(score/30) + "/" + Math.round(total/30)
+				score_.innerHTML = Math.floor(posture_count * score/total) + "/" + posture_count;
+			}
+		}
     }
 
     function countDown() {
@@ -134,10 +153,25 @@
         score = 0;
         total = 0;
         start_time = Date.now();
+		prev_ind = 0;
+		pause = false;
+		posture_count = 0;
+		document.getElementById("count_down_button").disabled = true;
+		console.log("score " + score)
     }
 
-    function pause() {
-        console.log("hello")
+    function pauseCount() {
+		if(pause == false) {
+			pause = true;
+		}
+	
+        //console.log("pause")
+    }
+	
+    function unpause() {
+		if (pause == true) {
+			pause = false;
+		}
     }
 
     function get_output_filename(subfix) {
@@ -146,18 +180,22 @@
     }
 
     function exportCSV() {
-        var csv_data = ""
-        for (let i = 0; i < posture_ct.length; i += 1) {
-        // Percentage in the x direction, times 255
-            csv_data += posture_ct[i] + "," 
-            csv_data +=  "\n"
-        }
+	if (posture_ct.length <= 0) {
+	    alert("Nothing to export");    
+	} else {
+	    var csv_data = ""
+            for (let i = 0; i < posture_ct.length; i += 1) {
+            // Percentage in the x direction, times 255
+                csv_data += posture_ct[i] + "," 
+                csv_data +=  "\n"
+            }
 
-        var hiddenElement = document.createElement('a');
-        hiddenElement.href = 'data:text/csv;charset=utf-8,' + encodeURI(csv_data);
-        hiddenElement.target = '_blank';
-        hiddenElement.download = get_output_filename(".csv");
-        hiddenElement.click();
+            var hiddenElement = document.createElement('a');
+            hiddenElement.href = 'data:text/csv;charset=utf-8,' + encodeURI(csv_data);
+            hiddenElement.target = '_blank';
+            hiddenElement.download = get_output_filename(".csv");
+            hiddenElement.click();
+	}
     }
 
     function drawPose(pose) {
