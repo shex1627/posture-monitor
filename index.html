@@ -11,10 +11,10 @@
 
 
 </td>
-<tr><td><input type="text" id="count_down_text" value="1800"></td><td><button id="count_down_button" type="button" onclick="countDown()">Count Down</button></td> 
+<tr><td><input type="text" id="count_down_text" placeholder="Session Length"></td><td><button id="count_down_button" type="button" onclick="countDown()">Count Down</button></td> 
 <td><button type="button" onclick="pauseCount()">pause</button></td>
 <td><button type="button" onclick="unpause()">unpause</button></td></tr>
-<tr><td><button type="button" onclick="exportCSV()">export CSV</button></td></tr>
+<tr><td><input type="text" id="activity_name" placeholder="Activity Name"></td><td><button type="button" onclick="exportCSV()">export CSV</button></td></tr>
 </table>
 <div><canvas id="canvas"></canvas></div>
 <div id="status", style.fontSize=50></div>
@@ -128,6 +128,7 @@
 							if (pause == false) {
 								start = false;
 								document.getElementById("count_down_button").disabled = false;
+								//alert("Session Over!");
 							}
 						}
 					} else {
@@ -146,6 +147,9 @@
 								document.getElementById("count_down_button").disabled = false;
 							}
 						}
+					}
+					if (((posture_count) == max_countdown_time) && (start == true && pause == false)) {
+						alert("Session Over!");
 					}
 				}
 			}
@@ -217,7 +221,8 @@
     }
 
     function get_output_filename(subfix) {
-        var output_filename = Date.now() + subfix;
+		let activity_name = document.getElementById("activity_name").value.trim().replace(/\s\s+/g, ' ').replaceAll(" ", "-");
+        var output_filename = Date.now() + "_" + Math.floor(posture_count / 60) + "m_" + activity_name + subfix;
         return output_filename 
     }
 
