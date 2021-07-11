@@ -1,9 +1,21 @@
+<html>
+<head>
+</head>
+
+<body>
+
 <div>Posture Monitoring</div>
-<button type="button" onclick="init()">Start</button>
-<button id="count_down_button" type="button" onclick="countDown()">Count Down</button>
-<button type="button" onclick="pauseCount()">pause</button>
-<button type="button" onclick="unpause()">unpause</button>
-<button type="button" onclick="exportCSV()">export CSV</button>
+<table>
+<tr>
+<td><button type="button" onclick="init()">Start</button>
+
+
+</td>
+<tr><td><input type="text" id="count_down_text" value="1800"></td><td><button id="count_down_button" type="button" onclick="countDown()">Count Down</button></td> 
+<td><button type="button" onclick="pauseCount()">pause</button></td>
+<td><button type="button" onclick="unpause()">unpause</button></td></tr>
+<tr><td><button type="button" onclick="exportCSV()">export CSV</button></td></tr>
+</table>
 <div><canvas id="canvas"></canvas></div>
 <div id="status", style.fontSize=50></div>
 <div id="score", style.fontSize=50></div>
@@ -16,7 +28,7 @@
 
     // the link to your model provided by Teachable Machine export panel
     const URL = "https://teachablemachine.withgoogle.com/models/SiZ9x5Vrf/";
-    let model, webcam, ctx, labelContainer, maxPredictions, start, pause, score, start_time, total, posture_ct, max_countdown_time, posture_count;
+    let model, webcam, ctx, labelContainer, maxPredictions, start, pause, score, start_time, total, posture_ct, max_countdown_time, posture_count, snd;
     let prev_ind, ind;
 
     async function init() {
@@ -33,6 +45,7 @@
 		posture_count = 0;
 		prev_ind = 0;
 		ind = 0;
+		snd = new Audio('Phone_Vibrating.mp3');
         //max_countdown_time = 30 * 60;
         max_countdown_time = 1800;
 		//max_countdown_time = 10;
@@ -142,23 +155,52 @@
 				//console.log("total: " + total, " score: " +score + " p_len " + posture_ct.length);
 				//score_.innerHTML = Math.round(score/30) + "/" + Math.round(total/30)
 				score_.innerHTML = Math.floor(posture_count * score/total) + "/" + posture_count;
+				if (total % 10 == 0) checkposture(posture_ct);
 			}
 		}
     }
 
     function countDown() {
-        console.log("start counting down")
-        start = true;
-        posture_ct = Array();
-        score = 0;
-        total = 0;
-        start_time = Date.now();
-		prev_ind = 0;
-		pause = false;
-		posture_count = 0;
-		document.getElementById("count_down_button").disabled = true;
-		console.log("score " + score)
+        max_countdown_time = parseInt(document.getElementById("count_down_text").value);
+		if (!(start === undefined) && !(isNaN(max_countdown_time))) {
+			console.log("start counting down")
+			//console.log(start);
+			//console.log(countdown_value);
+			start = true;
+			posture_ct = Array();
+			score = 0;
+			total = 0;
+			start_time = Date.now();
+			prev_ind = 0;
+			pause = false;
+			posture_count = 0;
+			//console.log(start);
+			document.getElementById("count_down_button").disabled = true;
+			//console.log("score " + score)
+		} else {
+			if (isNaN(max_countdown_time)) {
+				alert("Enter a valid countdown value");
+			}
+			console.log("Camera is not on or countdown is not number");
+		}
     }
+
+	let checkposture = function(posture_ct) {
+		let plen = posture_ct.length;
+		//console.log(Math.max(0, plen - 5))
+		let subset_posture = posture_ct.slice(Math.max(0, plen-5), plen);
+		if (subset_posture.length == 5) {
+			//console.log(subset_posture.length);
+			if (subset_posture[4].split(",").map(x => parseInt(x)).reduce((x, y) => x / y) <= .5) {
+				snd.play();
+				alert("Posture ration fell below .5");
+				
+			}
+		
+		
+		}
+	
+	}
 
     function pauseCount() {
 		if(pause == false) {
@@ -210,3 +252,6 @@
         }
     }
 </script>
+
+
+</body>
