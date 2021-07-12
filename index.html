@@ -46,6 +46,8 @@
 		prev_ind = 0;
 		ind = 0;
 		snd = new Audio('Phone_Vibrating.mp3');
+		end_notification = new Audio('PGA2.ogg')
+		
         //max_countdown_time = 30 * 60;
         max_countdown_time = 1800;
 		//max_countdown_time = 10;
@@ -149,7 +151,8 @@
 						}
 					}
 					if (((posture_count) == max_countdown_time) && (start == true && pause == false)) {
-						alert("Session Over!");
+						//alert("Session Over!");
+						end_notification.play();
 					}
 				}
 			}
@@ -197,7 +200,7 @@
 			//console.log(subset_posture.length);
 			if (subset_posture[4].split(",").map(x => parseInt(x)).reduce((x, y) => x / y) <= .5) {
 				snd.play();
-				alert("Posture ration fell below .5");
+				//alert("Posture ration fell below .5");
 				
 			}
 		
