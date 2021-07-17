@@ -45,8 +45,8 @@
 		posture_count = 0;
 		prev_ind = 0;
 		ind = 0;
-		snd = new Audio('Phone_Vibrating.mp3');
-		end_notification = new Audio('PGA2.ogg')
+		snd = new Audio('PGA2.ogg')
+		end_notification = new Audio('Phone_Vibrating.mp3');
 		
         //max_countdown_time = 30 * 60;
         max_countdown_time = 1800;
@@ -162,7 +162,7 @@
 				//console.log("total: " + total, " score: " +score + " p_len " + posture_ct.length);
 				//score_.innerHTML = Math.round(score/30) + "/" + Math.round(total/30)
 				score_.innerHTML = Math.floor(posture_count * score/total) + "/" + posture_count;
-				if (total % 10 == 0) checkposture(posture_ct);
+				if (total % 5 == 0) checkposture(posture_ct);
 			}
 		}
     }
@@ -194,10 +194,10 @@
 
 	let checkposture = function(posture_ct) {
 		let plen = posture_ct.length;
-		var window = 10;
+		var window = 5;
 		let subset_posture = posture_ct.slice(Math.max(0, plen-window), plen);
         console.log(subset_posture);
-		if (subset_posture.length == window) {
+		if (subset_posture[0]!=null & subset_posture[window-1]!=null) {
 			begin_score = subset_posture[0].split(",").map(x => parseInt(x))[0];
 			end_score = subset_posture[window-1].split(",").map(x => parseInt(x))[0];
 			if (end_score - begin_score <= 1) {
@@ -255,6 +255,9 @@
         }
     }
 </script>
+
+
+</body>
 
 
 </body>
