@@ -191,27 +191,22 @@
 
 	let checkposture = function(posture_ct) {
 		let plen = posture_ct.length;
-		//console.log(Math.max(0, plen - 5))
-		let subset_posture = posture_ct.slice(Math.max(0, plen-5), plen);
-		if (subset_posture.length == 5) {
-			//console.log(subset_posture.length);
-			if (subset_posture[4].split(",").map(x => parseInt(x)).reduce((x, y) => x / y) <= .5) {
+		var window = 10;
+		let subset_posture = posture_ct.slice(Math.max(0, plen-window), plen);
+        console.log(subset_posture);
+		if (subset_posture.length == window) {
+			begin_score = subset_posture[0].split(",").map(x => parseInt(x))[0];
+			end_score = subset_posture[window-1].split(",").map(x => parseInt(x))[0];
+			if (end_score - begin_score <= 1) {
 				snd.play();
-				alert("Posture ration fell below .5");
-				
 			}
-		
-		
 		}
-	
 	}
 
     function pauseCount() {
 		if(pause == false) {
 			pause = true;
 		}
-	
-        //console.log("pause")
     }
 	
     function unpause() {
