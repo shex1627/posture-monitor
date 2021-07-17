@@ -63,7 +63,9 @@
         webcam = new tmPose.Webcam(size, size, flip); // width, height, flip
         await webcam.setup(); // request access to the webcam
         await webcam.play();
-        window.requestAnimationFrame(loop);
+        window.setInterval(()=> {
+			loop()
+		},1000/20);
 
         // append/get elements to the DOM
         const canvas = document.getElementById("canvas");
@@ -85,10 +87,10 @@
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    async function loop(timestamp) {
+    async function loop() {
         webcam.update(); // update the webcam frame
         await predict();
-        window.requestAnimationFrame(loop);
+        //window.requestAnimationFrame(loop);
         if (start == true && pause == false) {
             //var prev_length = posture_ct.length;
             //console.log("sec : " + Math.floor((Date.now() - start_time)/1000) + " " + score + " " + posture_count);
