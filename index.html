@@ -1,9 +1,21 @@
+<html>
+<head>
+</head>
+
+<body>
+
 <div>Posture Monitoring</div>
-<button type="button" onclick="init()">Start</button>
-<button id="count_down_button" type="button" onclick="countDown()">Count Down</button>
-<button type="button" onclick="pauseCount()">pause</button>
-<button type="button" onclick="unpause()">unpause</button>
-<button type="button" onclick="exportCSV()">export CSV</button>
+<table>
+<tr>
+<td><button type="button" onclick="init()">Start</button>
+
+
+</td>
+<tr><td><input type="text" id="count_down_text" placeholder="Session Length"></td><td><button id="count_down_button" type="button" onclick="countDown()">Count Down</button></td> 
+<td><button type="button" onclick="pauseCount()">pause</button></td>
+<td><button type="button" onclick="unpause()">unpause</button></td></tr>
+<tr><td><input type="text" id="activity_name" placeholder="Activity Name"></td><td><button type="button" onclick="exportCSV()">export CSV</button></td></tr>
+</table>
 <div><canvas id="canvas"></canvas></div>
 <div id="status", style.fontSize=50></div>
 <div id="score", style.fontSize=50></div>
@@ -16,7 +28,7 @@
 
     // the link to your model provided by Teachable Machine export panel
     const URL = "https://teachablemachine.withgoogle.com/models/SiZ9x5Vrf/";
-    let model, webcam, ctx, labelContainer, maxPredictions, start, pause, score, start_time, total, posture_ct, max_countdown_time, posture_count;
+    let model, webcam, ctx, labelContainer, maxPredictions, start, pause, score, start_time, total, posture_ct, max_countdown_time, posture_count, snd;
     let prev_ind, ind;
 
     async function init() {
@@ -33,6 +45,9 @@
 		posture_count = 0;
 		prev_ind = 0;
 		ind = 0;
+		snd = new Audio('PGA2.ogg')
+		end_notification = new Audio('Phone_Vibrating.mp3');
+		
         //max_countdown_time = 30 * 60;
         max_countdown_time = 1800;
 		//max_countdown_time = 10;
@@ -48,7 +63,9 @@
         webcam = new tmPose.Webcam(size, size, flip); // width, height, flip
         await webcam.setup(); // request access to the webcam
         await webcam.play();
-        window.requestAnimationFrame(loop);
+        window.setInterval(()=> {
+			loop()
+		},1000/20);
 
         // append/get elements to the DOM
         const canvas = document.getElementById("canvas");
@@ -70,10 +87,10 @@
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
-    async function loop(timestamp) {
+    async function loop() {
         webcam.update(); // update the webcam frame
         await predict();
-        window.requestAnimationFrame(loop);
+        //window.requestAnimationFrame(loop);
         if (start == true && pause == false) {
             //var prev_length = posture_ct.length;
             //console.log("sec : " + Math.floor((Date.now() - start_time)/1000) + " " + score + " " + posture_count);
@@ -115,6 +132,7 @@
 							if (pause == false) {
 								start = false;
 								document.getElementById("count_down_button").disabled = false;
+								//alert("Session Over!");
 							}
 						}
 					} else {
@@ -134,6 +152,10 @@
 							}
 						}
 					}
+					if (((posture_count) == max_countdown_time) && (start == true && pause == false)) {
+						//alert("Session Over!");
+						end_notification.play();
+					}
 				}
 			}
 			// update score
@@ -142,30 +164,54 @@
 				//console.log("total: " + total, " score: " +score + " p_len " + posture_ct.length);
 				//score_.innerHTML = Math.round(score/30) + "/" + Math.round(total/30)
 				score_.innerHTML = Math.floor(posture_count * score/total) + "/" + posture_count;
+				if (total % 5 == 0) checkposture(posture_ct);
 			}
 		}
     }
 
     function countDown() {
-        console.log("start counting down")
-        start = true;
-        posture_ct = Array();
-        score = 0;
-        total = 0;
-        start_time = Date.now();
-		prev_ind = 0;
-		pause = false;
-		posture_count = 0;
-		document.getElementById("count_down_button").disabled = true;
-		console.log("score " + score)
+        max_countdown_time = parseInt(document.getElementById("count_down_text").value);
+		if (!(start === undefined) && !(isNaN(max_countdown_time))) {
+			console.log("start counting down")
+			//console.log(start);
+			//console.log(countdown_value);
+			start = true;
+			posture_ct = Array();
+			score = 0;
+			total = 0;
+			start_time = Date.now();
+			prev_ind = 0;
+			pause = false;
+			posture_count = 0;
+			//console.log(start);
+			document.getElementById("count_down_button").disabled = true;
+			//console.log("score " + score)
+		} else {
+			if (isNaN(max_countdown_time)) {
+				alert("Enter a valid countdown value");
+			}
+			console.log("Camera is not on or countdown is not number");
+		}
     }
+
+	let checkposture = function(posture_ct) {
+		let plen = posture_ct.length;
+		var window = 5;
+		let subset_posture = posture_ct.slice(Math.max(0, plen-window), plen);
+        console.log(subset_posture);
+		if (subset_posture[0]!=null & subset_posture[window-1]!=null) {
+			begin_score = subset_posture[0].split(",").map(x => parseInt(x))[0];
+			end_score = subset_posture[window-1].split(",").map(x => parseInt(x))[0];
+			if (end_score - begin_score <= 1) {
+				snd.play();
+			}
+		}
+	}
 
     function pauseCount() {
 		if(pause == false) {
 			pause = true;
 		}
-	
-        //console.log("pause")
     }
 	
     function unpause() {
@@ -175,7 +221,8 @@
     }
 
     function get_output_filename(subfix) {
-        var output_filename = Date.now() + subfix;
+		let activity_name = document.getElementById("activity_name").value.trim().replace(/\s\s+/g, ' ').replaceAll(" ", "-");
+        var output_filename = Date.now() + "_" + Math.floor(posture_count / 60) + "m_" + activity_name + subfix;
         return output_filename 
     }
 
@@ -210,3 +257,9 @@
         }
     }
 </script>
+
+
+</body>
+
+
+</body>
