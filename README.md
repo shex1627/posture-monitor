@@ -8,9 +8,9 @@
 
 ## How to Use
 
-1. Click `start` button to start camera input and model prediction.
-2. Input `session length` in seconds in text box.
-3. Click `count down` to start a posture monitoring session. It tracks the number of seconds/total seconds you hold a `correct posture`. A sound alert will be triggered if you score <=1 in the last 5 seconds (variables that you can adjust in the html file).
+1. Click `Start` button to start camera input and model prediction.
+2. Input `Session Length` in seconds in text box.
+3. Click `Count Down` to start a posture monitoring session. It tracks the number of seconds/total seconds you hold a `correct posture`. A sound alert will be triggered if you score <=1 in the last 5 seconds (variables that you can adjust in the html file).
 
 ## CSV Session Export
 You can export your session's score over time by clicking `export CSV`. The CSV filename will be generated as the following:
