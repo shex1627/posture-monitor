@@ -15,7 +15,7 @@
 <td><button type="button" onclick="pauseCount()">pause</button></td>
 <td><button type="button" onclick="unpause()">unpause</button></td></tr>
 <tr><td><input type="text" id="activity_name" placeholder="Activity Name"></td><td><button type="button" onclick="exportCSV()">export CSV</button></td></tr>
-<tr><td><input type="checkbox" id="mute_box" onChange="mute()"></td><td>Mute</td></tr>
+<tr><td><input type="checkbox" id="sound_alert_box" onChange="sound_alert()">Enable Sound Alert</td></tr>
 </table>
 <div><canvas id="canvas"></canvas></div>
 <div id="status", style.fontSize=50></div>
@@ -29,7 +29,7 @@
 
     // the link to your model provided by Teachable Machine export panel
     const URL = "https://teachablemachine.withgoogle.com/models/SiZ9x5Vrf/";
-    let model, webcam, ctx, labelContainer, maxPredictions, start, pause, score, start_time, total, posture_ct, max_countdown_time, posture_count, snd, mute_value;
+    let model, webcam, ctx, labelContainer, maxPredictions, start, pause, score, start_time, total, posture_ct, max_countdown_time, posture_count, snd, sound_alert_value;
     let prev_ind, ind;
 
     async function init() {
@@ -48,7 +48,7 @@
 		ind = 0;
 		snd = new Audio('PGA2.ogg')
 		end_notification = new Audio('Phone_Vibrating.mp3');
-		mute_value = false;
+		sound_alert_value = true;
 		
         //max_countdown_time = 30 * 60;
         max_countdown_time = 1800;
@@ -156,7 +156,7 @@
 					}
 					if (((posture_count) == max_countdown_time) && (start == true && pause == false)) {
 						//alert("Session Over!");
-						if (!mute_value) end_notification.play();
+						if (sound_alert_value) end_notification.play();
 					}
 				}
 			}
@@ -205,13 +205,13 @@
 			begin_score = subset_posture[0].split(",").map(x => parseInt(x))[0];
 			end_score = subset_posture[window-1].split(",").map(x => parseInt(x))[0];
 			if (end_score - begin_score <= 1) {
-				if (!mute_value) snd.play();
+				if (sound_alert_value) snd.play();
 			}
 		}
 	}
 	
-	function mute() {
-		mute_value = document.getElementById("mute_box").checked;
+	function sound_alert() {
+		sound_alert_value = document.getElementById("sound_alert_box").checked;
 	}
 
     function pauseCount() {
