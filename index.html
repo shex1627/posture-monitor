@@ -16,6 +16,7 @@
 <td><button type="button" onclick="unpause()">unpause</button></td></tr>
 <tr><td><input type="text" id="activity_name" placeholder="Activity Name"></td><td><button type="button" onclick="exportCSV()">export CSV</button></td></tr>
 <tr><td><input type="checkbox" id="sound_alert_box" onChange="sound_alert()">Enable Sound Alert</td></tr>
+<tr><td><input type="text" placeholder="The number of seconds of bad posture before alert" id="bad_post_interval_id" onChange="bad_post_interval()"></td></tr>
 </table>
 <div><canvas id="canvas"></canvas></div>
 <div id="status", style.fontSize=50></div>
@@ -29,7 +30,7 @@
 
     // the link to your model provided by Teachable Machine export panel
     const URL = "https://teachablemachine.withgoogle.com/models/SiZ9x5Vrf/";
-    let model, webcam, ctx, labelContainer, maxPredictions, start, pause, score, start_time, total, posture_ct, max_countdown_time, posture_count, snd, enable_sound_alert;
+    let model, webcam, ctx, labelContainer, maxPredictions, start, pause, score, start_time, total, posture_ct, max_countdown_time, posture_count, snd, enable_sound_alert, bad_post;
     let prev_ind, ind;
 
     async function init() {
@@ -49,6 +50,7 @@
 		snd = new Audio('PGA2.ogg')
 		end_notification = new Audio('Phone_Vibrating.mp3');
 		enable_sound_alert = true;
+		bad_post = 5;
 		
         //max_countdown_time = 30 * 60;
         max_countdown_time = 1800;
@@ -83,6 +85,8 @@
 
         score_  = document.getElementById("score")
         score_.style.fontSize=100
+		
+		bad_post_interval();
     }
 
     function sleep(ms) {
@@ -198,17 +202,31 @@
 
 	let checkposture = function(posture_ct) {
 		let plen = posture_ct.length;
-		var window = 5;
-		let subset_posture = posture_ct.slice(Math.max(0, plen-window), plen);
+		//bad_post = 5;
+		let subset_posture = posture_ct.slice(Math.max(0, plen-bad_post), plen);
         console.log(subset_posture);
-		if (subset_posture[0]!=null & subset_posture[window-1]!=null) {
+		if (subset_posture[0]!=null & subset_posture[bad_post-1]!=null) {
 			begin_score = subset_posture[0].split(",").map(x => parseInt(x))[0];
-			end_score = subset_posture[window-1].split(",").map(x => parseInt(x))[0];
+			end_score = subset_posture[bad_post-1].split(",").map(x => parseInt(x))[0];
 			if (end_score - begin_score <= 1) {
 				if (enable_sound_alert) snd.play();
 			}
 		}
 	}
+	
+	function bad_post_interval() {
+		bad_post_value = document.getElementById("bad_post_interval_id").value;
+		if (!isNaN(bad_post_value) && parseInt(Number(bad_post_value)) == bad_post_value && !isNaN(parseInt(bad_post_value, 10))) {
+			if (bad_post_value > 2) {
+				bad_post = bad_post_value;
+			} else {
+				bad_post = 2;
+			}
+		} else {
+			bad_post = 5;
+		}
+	}
+	
 	
 	function sound_alert() {
 		enable_sound_alert = document.getElementById("sound_alert_box").checked;
