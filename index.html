@@ -12,10 +12,11 @@
 
 </td>
 <tr><td><input type="text" id="count_down_text" placeholder="Session Length"></td><td><button id="count_down_button" type="button" onclick="countDown()">Count Down</button></td> 
-<td><button type="button" onclick="pauseCount()">pause</button>
-<button type="button" onclick="unpause()">unpause</button></td></tr>
-<tr><td><input type="text" id="activity_name" placeholder="Activity Name"></td><td><button type="button" onclick="exportCSV()">export CSV</button></td></tr>
-<tr><td><input type="checkbox" id="sound_alert_box" onChange="sound_alert()">Enable Sound Alert after</td><td><input type="text" id="bad_post_interval_id" onChange="bad_post_interval()" style="width: 90px;" value="5"></td><td>Seconds of bad posture(checks posture every 5 seconds)</td></tr>
+<td><button type="button" onclick="pause_session()">pause</button>
+<button type="button" onclick="unpause_session()">unpause</button></td></tr>
+<tr><td><input type="text" id="activity_name" placeholder="Activity Name"></td><td><button type="button" onclick="export_csv()">export CSV</button></td></tr>
+<tr><td><input type="checkbox" id="sound_alert_box" onChange="update_sound_alert_setting()">Enable Sound Alert after</td><td><input type="text" id="bad_post_threshold_id" 
+	onChange="update_bad_posture_threshold()" style="width: 90px;" value="5"></td><td>Seconds of bad posture(checks posture every 5 seconds)</td></tr>
 </table>
 <div><canvas id="canvas"></canvas></div>
 <div id="status", style.fontSize=50></div>
@@ -29,7 +30,7 @@
 
     // the link to your model provided by Teachable Machine export panel
     const URL = "https://teachablemachine.withgoogle.com/models/SiZ9x5Vrf/";
-    let model, webcam, ctx, labelContainer, maxPredictions, start, pause, score, start_time, total, posture_ct, max_countdown_time, posture_count, snd, enable_sound_alert, bad_post;
+    let model, webcam, ctx, labelContainer, maxPredictions, start, pause, score, start_time, total, posture_ct, max_countdown_time, posture_count, snd, enable_sound_alert, bad_posture_threshold;
     let prev_ind, ind;
 
     async function init() {
@@ -49,11 +50,9 @@
 		snd = new Audio('PGA2.ogg')
 		end_notification = new Audio('Phone_Vibrating.mp3');
 		enable_sound_alert = true;
-		bad_post = 5;
+		bad_posture_threshold = 5;
 		
-        //max_countdown_time = 30 * 60;
         max_countdown_time = 1800;
-		//max_countdown_time = 10;
         // load the model and metadata
         // Refer to tmImage.loadFromFiles() in the API to support files from a file picker
         // Note: the pose library adds a tmPose object to your window (window.tmPose)
@@ -77,7 +76,6 @@
         labelContainer = document.getElementById("label-container");
         for (let i = 0; i < maxPredictions; i++) { // and class labels
             labelContainer.appendChild(document.createElement("div"));
-            //labelContainer.childNodes[i].style.fontSize = 50;
         }
         status_ = document.getElementById("status")
         status_.style.fontSize=500
@@ -85,7 +83,7 @@
         score_  = document.getElementById("score")
         score_.style.fontSize=100
 		
-		bad_post_interval();
+		update_bad_posture_threshold();
     }
 
     function sleep(ms) {
@@ -95,10 +93,7 @@
     async function loop() {
         webcam.update(); // update the webcam frame
         await predict();
-        //window.requestAnimationFrame(loop);
         if (start == true && pause == false) {
-            //var prev_length = posture_ct.length;
-            //console.log("sec : " + Math.floor((Date.now() - start_time)/1000) + " " + score + " " + posture_count);
 			posture_ct[Math.floor((Date.now() - start_time)/1000)] = score + "," + total
         }
     }
@@ -113,15 +108,12 @@
 		drawPose(pose);
 		ind = Math.floor((Date.now() - start_time)/1000);
 		
-		//console.log("score : " + score + "ind : " + ind + " prev_ind " + prev_ind + " total : " + total + " start " + start + " pause " + pause );
 		if (prev_ind < ind) {
-			//console.log(prev_ind + " " + ind);
 			prev_ind = ind
 			for (let i = 0; i < maxPredictions; i++) {
 				const classPrediction =
 					prediction[i].className + ": " + prediction[i].probability.toFixed(2);
 				labelContainer.childNodes[i].innerHTML = classPrediction;
-				//status_ = document.getElementById("status")
 				if(prediction[i].className == "bad posture") {
 					if (start == true && pause == false) {
 						posture_count++;
@@ -132,12 +124,10 @@
 						status_.style.backgroundColor = "red"
 						// bad posture gets 0 point
 						if ((posture_count <= max_countdown_time) && (start == true)) {
-							// posture_ct[posture_ct.length] = 1 
 						} else {
 							if (pause == false) {
 								start = false;
 								document.getElementById("count_down_button").disabled = false;
-								//alert("Session Over!");
 							}
 						}
 					} else {
@@ -146,7 +136,6 @@
 						status_.style.backgroundColor = "white"
 						// good posture gets one point
 						if ((posture_count <= max_countdown_time) && (start == true)) {
-							// posture_ct[posture_ct.length] = 1 
 							if (pause == false) {
 								score++;
 							}
@@ -158,18 +147,15 @@
 						}
 					}
 					if (((posture_count) == max_countdown_time) && (start == true && pause == false)) {
-						//alert("Session Over!");
 						if (enable_sound_alert) end_notification.play();
 					}
 				}
 			}
-			// update score
+			// update score 
 			if (start == true && pause == false) {
 				total++;
-				//console.log("total: " + total, " score: " +score + " p_len " + posture_ct.length);
-				//score_.innerHTML = Math.round(score/30) + "/" + Math.round(total/30)
 				score_.innerHTML = Math.floor(posture_count * score/total) + "/" + posture_count;
-				if (total % 5 == 0) checkposture(posture_ct);
+				if (total % 5 == 0) check_posture(posture_ct);
 			}
 		}
     }
@@ -178,8 +164,6 @@
         max_countdown_time = parseInt(document.getElementById("count_down_text").value);
 		if (!(start === undefined) && !(isNaN(max_countdown_time))) {
 			console.log("start counting down")
-			//console.log(start);
-			//console.log(countdown_value);
 			start = true;
 			posture_ct = Array();
 			score = 0;
@@ -188,9 +172,7 @@
 			prev_ind = 0;
 			pause = false;
 			posture_count = 0;
-			//console.log(start);
 			document.getElementById("count_down_button").disabled = true;
-			//console.log("score " + score)
 		} else {
 			if (isNaN(max_countdown_time)) {
 				alert("Enter a valid countdown value");
@@ -199,45 +181,45 @@
 		}
     }
 
-	let checkposture = function(posture_ct) {
-		let plen = posture_ct.length;
-		//bad_post = 5;
-		let subset_posture = posture_ct.slice(Math.max(0, plen-bad_post), plen);
-        console.log(subset_posture);
-		if (subset_posture[0]!=null & subset_posture[bad_post-1]!=null) {
+	let check_posture = function(posture_ct) {
+		// look back bad_posture_threshold seconds, alert of all-1s are bad posture
+		let posture_duration = posture_ct.length;
+		let subset_posture = posture_ct.slice(Math.max(0, posture_duration-bad_posture_threshold), posture_duration);
+		if (subset_posture[0]!=null & subset_posture[bad_posture_threshold-1]!=null) {
 			begin_score = subset_posture[0].split(",").map(x => parseInt(x))[0];
-			end_score = subset_posture[bad_post-1].split(",").map(x => parseInt(x))[0];
+			end_score = subset_posture[bad_posture_threshold-1].split(",").map(x => parseInt(x))[0];
 			if (end_score - begin_score <= 1) {
 				if (enable_sound_alert) snd.play();
 			}
 		}
 	}
 	
-	function bad_post_interval() {
-		bad_post_value = document.getElementById("bad_post_interval_id").value;
-		if (!isNaN(bad_post_value) && parseInt(Number(bad_post_value)) == bad_post_value && !isNaN(parseInt(bad_post_value, 10))) {
-			if (bad_post_value > 2) {
-				bad_post = bad_post_value;
+	function update_bad_posture_threshold() {
+		// when entered in valid values, default to 5, min value is 2.
+		bad_posture_threshold_input = document.getElementById("bad_post_threshold_id").value;
+		if (!isNaN(bad_posture_threshold_input) && parseInt(Number(bad_posture_threshold_input)) == bad_posture_threshold_input && !isNaN(parseInt(bad_posture_threshold_input, 10))) {
+			if (bad_posture_threshold_input > 2) {
+				bad_posture_threshold = bad_posture_threshold_input;
 			} else {
-				bad_post = 2;
+				bad_posture_threshold = 2;
 			}
 		} else {
-			bad_post = 5;
+			bad_posture_threshold = 5;
 		}
 	}
 	
 	
-	function sound_alert() {
+	function update_sound_alert_setting() {
 		enable_sound_alert = document.getElementById("sound_alert_box").checked;
 	}
 
-    function pauseCount() {
+    function pause_session() {
 		if(pause == false) {
 			pause = true;
 		}
     }
 	
-    function unpause() {
+    function unpause_session() {
 		if (pause == true) {
 			pause = false;
 		}
@@ -249,7 +231,8 @@
         return output_filename 
     }
 
-    function exportCSV() {
+    function export_csv() {
+	// export score history to csv files, each row represents a second, undefined when session is paused
 	if (posture_ct.length <= 0) {
 	    alert("Nothing to export");    
 	} else {
